@@ -8,6 +8,7 @@ import android.graphics.Rect
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.View
+import java.lang.Integer.min
 import java.util.Calendar
 import kotlin.math.cos
 import kotlin.math.sin
@@ -15,7 +16,7 @@ import kotlin.math.sin
 
 class AnalogClockView(
     context: Context,
-    attributeSet: AttributeSet,
+    attributeSet: AttributeSet?,
 ) : View(context, attributeSet) {
     private var height = 0
     private var width = 0
@@ -40,7 +41,7 @@ class AnalogClockView(
         centreX = width / 2
         centreY = height / 2
         val minimum = height.coerceAtMost(width)
-        radius = (minimum / 2 - padding).plus(40)
+        radius = (minimum / 2 - padding).plus(min(height, width) / 30)
         angle = (Math.PI / 30 - Math.PI / 2).toFloat().toDouble()
         paint = Paint()
         rect = Rect()
@@ -55,20 +56,13 @@ class AnalogClockView(
         drawCircle(canvas)
         drawHands(canvas)
         drawNumerals(canvas)
-        drawCircleCenter(canvas)
         postInvalidateDelayed(1000)
-    }
-
-    private fun drawCircleCenter(canvas: Canvas) {
-        paint.reset()
-        setPaintAttributes(Color.BLACK, Paint.Style.FILL, 8);
-        canvas.drawCircle(centreX.toFloat(), centreY.toFloat(), 20.toFloat(), paint)
     }
 
     private fun drawHands(canvas: Canvas) {
         val calendar: Calendar = Calendar.getInstance()
         hour = calendar.get(Calendar.HOUR_OF_DAY).toFloat()
-        hour = if (hour > 12) hour - 12 else hour
+        hour %= 12
         minute = calendar.get(Calendar.MINUTE).toFloat()
         second = calendar.get(Calendar.SECOND).toFloat()
         drawHourArrow(canvas, (hour + minute / 60.0) * 5f)
@@ -95,11 +89,11 @@ class AnalogClockView(
         setPaintAttributes(Color.BLUE, Paint.Style.STROKE, 8);
         angle = Math.PI * location / 30 - Math.PI / 2;
         canvas.drawLine(
-            centreX.toFloat(),
-            centreY.toFloat(),
-            (centreX + cos(angle) * handSize).toFloat(),
-            (centreY + sin(angle) * hourHandSize).toFloat(),
-            paint
+            /* startX = */ centreX.toFloat(),
+            /* startY = */ centreY.toFloat(),
+            /* stopX = */ (centreX + cos(angle) * handSize).toFloat(),
+            /* stopY = */ (centreY + sin(angle) * hourHandSize).toFloat(),
+            /* paint = */ paint
         )
     }
 
@@ -132,12 +126,12 @@ class AnalogClockView(
     private fun drawNumerals(canvas: Canvas) {
         paint.reset();
         setPaintAttributes(Color.BLACK, Paint.Style.FILL, 10)
-        paint.textSize = spToPx(40f, context)
-        for (number in intArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)) {
+        paint.textSize = spToPx((min(height, width) / 25).toFloat(), context)
+        for (number in 1..12) {
             val num = number.toString()
             paint.getTextBounds(num, 0, num.length, rect)
             val angle = Math.PI / 6 * (number - 3)
-            val numRadius = radius.minus(80)
+            val numRadius = radius.minus((min(height, width) / 26))
             val x = (centreX + cos(angle) * numRadius - rect.width() / 2).toFloat()
             val y = (centreY + sin(angle) * numRadius + rect.height() / 2).toFloat()
             canvas.drawText(num, x, y, paint)
